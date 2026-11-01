@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MATH ADVENTURE</title>
+<style>
+:root{--b:#2563eb;--p:#7c3aed;--g:#15803d;--o:#c2410c;--y:#facc15;--ink:#1e1b4b}
+*{box-sizing:border-box}
+body{margin:0;font:18px/1.55 "Trebuchet MS",system-ui,sans-serif;color:var(--ink);background:linear-gradient(160deg,#dbeafe,#ede9fe 55%,#fef9c3);min-height:100vh;padding-bottom:88px}
+main{max-width:900px;margin:auto;padding:14px}
+h1{font-size:clamp(2rem,8vw,3.2rem);margin:.2em 0;text-align:center;color:var(--p);letter-spacing:1px}
+h2{margin:.3em 0}.sub{text-align:center;font-size:1.2rem;margin:0 0 8px}
+.card{background:#fff;border-radius:24px;padding:16px;box-shadow:0 5px 0 #c4b5fd;margin:12px 0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.stats{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.stat{background:#fff;border-radius:18px;padding:10px;text-align:center;font-weight:700}.stat b{display:block;font-size:1.5rem;color:var(--b)}
+button{font:inherit;font-weight:700;border:0;border-radius:18px;padding:12px 18px;min-height:50px;cursor:pointer;background:var(--b);color:#fff;margin:4px 4px 4px 0}
+button.s{background:#ede9fe;color:var(--ink)}button.g{background:var(--g)}button.o{background:var(--o)}button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:4px solid var(--y);outline-offset:2px}
+input{font:inherit;font-size:1.4rem;padding:10px;border:3px solid #a78bfa;border-radius:14px;width:100%;max-width:240px;display:block}
+label{display:inline-block;margin:6px 10px 6px 0;font-weight:700}
+.bar{background:#e5e7eb;border-radius:99px;height:14px;overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;transition:width .5s}
+pre{font:1.35rem/1.35 "Courier New",monospace;background:#f5f3ff;padding:12px;border-radius:14px;overflow-x:auto;display:inline-block;max-width:100%}
+.guide{display:flex;gap:12px;align-items:center;background:#fef9c3}.mascot{font-size:3rem}
+.ok{background:#dcfce7;border-radius:14px;padding:10px;color:#14532d;font-weight:700}.no{background:#ffedd5;border-radius:14px;padding:10px;color:#7c2d12;font-weight:700}
+.sol{background:#f5f3ff;border-radius:16px;padding:10px 14px;margin-top:10px}.fin{font-weight:700;color:var(--g)}
+.opt{display:block;width:100%;text-align:left;background:#ede9fe;color:var(--ink);font-size:1.15rem}.opt.r{background:#bbf7d0}.opt.w{background:#fed7aa}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;justify-content:space-around;padding:6px;box-shadow:0 -3px 12px #4c1d9533}
+nav button{background:none;color:var(--ink);font-size:.8rem;padding:4px 6px;display:flex;flex-direction:column;align-items:center;min-width:56px;margin:0}nav button span{font-size:1.5rem}
+.toast{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--p);color:#fff;padding:10px 18px;border-radius:99px;z-index:100;font-weight:700}
+.conf{position:fixed;top:-30px;z-index:99;font-size:1.6rem;pointer-events:none;animation:fall 2.2s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
+.badge{text-align:center;opacity:.35}.badge.on{opacity:1}.badge span{font-size:2.4rem;display:block}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body><main id="app"></main><script>
+const OPS=[{k:'add',n:'Addition Adventure',i:'➕',c:'#2563eb',d:'Put numbers together to find the total.'},{k:'sub',n:'Subtraction Quest',i:'➖',c:'#7c3aed',d:'Take away and find what is left.'},{k:'mul',n:'Multiplication Mission',i:'✖️',c:'#15803d',d:'Count equal groups quickly.'},{k:'div',n:'Division Challenge',i:'➗',c:'#c2410c',d:'Share equally and make groups.'}];
+const LV=['Number Explorer','Skill Builder','Number Champion','Math Master','Expert Challenge','Pro Math Challenge'];
+const IDEA={add:'Addition means putting groups together. The numbers we add are called addends. The answer is the sum. Line up the digits by place value. Start with the ones. If a column makes 10 or more, carry to the next place. Always estimate first, then check.',sub:'Subtraction means taking away, or finding the difference. The first number is the minuend, the number taken away is the subtrahend. Start with the ones. If the top digit is too small, borrow 1 from the next place: it is worth 10 here. Check by adding back.',mul:'Multiplication is repeated addition: 4 × 3 = 3 + 3 + 3 + 3. The numbers are factors and the answer is the product. For a two-digit multiplier, multiply by the ones, then by the tens, then add the parts. Learn your tables well!',div:'Division means sharing equally. The dividend is divided by the divisor to give the quotient. Sometimes some is left over: that is the remainder. Steps: divide, multiply, subtract, bring down. Check: quotient × divisor + remainder = dividend.'};
+const TOP={add:['Adding two-digit numbers','Carrying with 2- and 3-digit numbers','Regrouping in 3-digit addition','Adding larger numbers','Adding 4- and 5-digit numbers','Five-digit addition and checking'],sub:['Subtracting two-digit numbers','Borrowing with 2- and 3-digit numbers','Borrowing across zeros','Subtracting larger numbers','Subtracting 4- and 5-digit numbers','Five-digit subtraction and checking'],mul:['Multiplying by one digit','Carrying in multiplication','Multiplying by two-digit numbers','Larger numbers times one digit','Four-digit by two-digit multiplication','Five-digit by two-digit multiplication'],div:['Division as equal sharing','Short division with remainders','Division with zeros in the answer','Larger numbers, one-digit divisors','Two-digit divisors','Long division with big numbers']};
+const HINT={add:'Line up the digits by place value. Start at the ones and carry when a column is 10 or more.',sub:'Start at the ones. If the top digit is smaller, borrow 1 from the next place.',mul:'Multiply by the ones digit first, then the tens digit. Add the parts together.',div:'Divide, multiply, subtract, bring down. Repeat. Check: quotient × divisor + remainder = dividend.'};
+const TIP={add:'carrying in addition',sub:'borrowing across zeros',mul:'multiplying by two-digit numbers',div:'the long division steps'};
+const MSG=["Let's solve a puzzle!","Great work! Keep going!","Mistakes help us learn.","You are getting better every day!"];
+const WP={add:[n=>[`A shopkeeper has ${F(n[0])} pencils. He buys ${F(n[1])} more pencils. How many pencils does he have now?`,'pencils'],n=>[`Maya read ${F(n[0])} pages last month and ${F(n[1])} pages this month. How many pages did she read in all?`,'pages'],n=>[`A school has ${F(n[0])} boys and ${F(n[1])} girls. How many students does the school have?`,'students'],n=>[`Sam saved ${F(n[0])} coins in January and ${F(n[1])} coins in February. How many coins has he saved?`,'coins'],n=>[`A train carried ${n.map(F).join(', ')} passengers on ${n.length} trips. How many passengers did it carry in all?`,'passengers']],
+sub:[n=>[`A shopkeeper has ${F(n[0])} pencils. He sells ${F(n[1])} of them. How many pencils are left?`,'pencils'],n=>[`A library has ${F(n[0])} books. ${F(n[1])} books are lent out. How many books remain?`,'books'],n=>[`A toy costs ${F(n[0])} coins. Riya has ${F(n[1])} coins. How many more coins does she need?`,'coins'],n=>[`A bus trip is ${F(n[0])} km long. The bus has travelled ${F(n[1])} km. How many km are left?`,'km'],n=>[`A fruit seller had ${F(n[0])} apples. He sold ${F(n[1])} apples. How many apples does he have now?`,'apples']],
+mul:[n=>[`A box holds ${n[1]} pencils. How many pencils are in ${F(n[0])} boxes?`,'pencils'],n=>[`A school buys ${n[1]} books for each of its ${F(n[0])} classes. How many books does it buy?`,'books'],n=>[`A hall has ${F(n[0])} rows of chairs. Each row has ${n[1]} chairs. How many chairs are there?`,'chairs'],n=>[`A bus travels ${n[1]} km every day. How far does it travel in ${F(n[0])} days?`,'km'],n=>[`A crate holds ${n[1]} oranges. How many oranges are in ${F(n[0])} crates?`,'oranges']],
+div:[n=>[`${F(n[0])} sweets are shared equally among ${n[1]} children. How many sweets does each child get?`,'sweets'],n=>[`${F(n[0])} books are packed into boxes of ${n[1]} books each. How many boxes are needed?`,'boxes'],n=>[`${F(n[0])} chairs are arranged in rows of ${n[1]}. How many rows are there?`,'rows'],n=>[`A runner covers ${F(n[0])} metres in ${n[1]} equal laps. How many metres is each lap?`,'metres'],n=>[`${F(n[0])} oranges are packed ${n[1]} to a bag. How many bags can be filled?`,'bags']]};
+function F(n){return n.toLocaleString('en-US')}
+const cap=s=>s[0].toUpperCase()+s.slice(1),pick=a=>a[Math.floor(Math.random()*a.length)];
+const PL=['ones','tens','hundreds','thousands','ten thousands','hundred thousands'];
+function rng(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}let a=h>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const ri=(r,lo,hi)=>lo+Math.floor(r()*(hi-lo+1));
+/* ---------- question generators ---------- */
+const R=[[10,99],[10,999],[100,999],[100,9999],[1000,99999],[10000,99999]];
+const M=[[10,99,2,9],[100,999,2,9],[100,999,11,99],[1000,9999,2,9],[1000,9999,11,99],[10000,99999,11,99]];
+const D=[[2,9,2,12],[2,9,10,99],[2,9,100,300],[2,9,200,1500],[11,30,100,900],[11,99,100,999]];
+function gen(op,lv,r,i,exact){const l=lv-1;
+ if(op=='add'){const[lo,hi]=R[l],k=(l>0&&i%5==4)?3:2,n=[];for(let j=0;j<k;j++)n.push(ri(r,lo,hi));return{nums:n,ans:[n.reduce((x,y)=>x+y)]}}
+ if(op=='sub'){const[lo,hi]=R[l];let a=ri(r,lo+5,hi);if(l>=2&&i%3==0){const p=10**(String(a).length-1);a=Math.floor(a/p)*p+ri(r,0,9)}const b=ri(r,Math.max(2,Math.floor(a/10)),a-1);return{nums:[a,b],ans:[a-b]}}
+ if(op=='mul'){const[a1,a2,b1,b2]=M[l],a=ri(r,a1,a2),b=ri(r,b1,b2);return{nums:[a,b],ans:[a*b]}}
+ const[d1,d2,q1,q2]=D[l],d=ri(r,d1,d2);let q=ri(r,q1,q2);if(l>=2&&i%5==4)q=Math.floor(q/100)*100+ri(r,1,9);
+ const rem=(!exact&&l>=1&&i%3==0)?ri(r,1,d-1):0;return{nums:[d*q+rem,d],ans:[q,rem]}}
+function addS(n){const L=Math.max(...n.map(x=>String(x).length));let c=0,o=[],res='';for(let k=0;k<L;k++){const d=n.map(x=>Math.floor(x/10**k)%10),s=d.reduce((x,y)=>x+y)+c,last=k==L-1;o.push({h:'Step '+(k+1)+': '+cap(PL[k]),t:d.join(' + ')+(c?' + '+c+' (carried)':'')+' = '+s+'. '+(last?'Write '+s+'.':'Write '+s%10+(s>9?' and carry '+Math.floor(s/10)+'.':'.'))});res=(last?s:s%10)+res;c=Math.floor(s/10)}return{steps:o,res:+res}}
+function subS(a,b){const da=String(a).split('').reverse().map(Number),db=String(b).split('').reverse().map(Number),o=[];let res='';for(let k=0;k<da.length;k++){const y=db[k]||0;let x=da[k],t;if(x<y){let j=k+1;while(da[j]==0)j++;da[j]--;for(let m=j-1;m>k;m--)da[m]=9;da[k]+=10;t='Top digit '+x+' is smaller than '+y+'. Borrow 1 from the '+PL[j]+' place'+(j>k+1?' (the zeros in between become 9)':'')+'. Now '+da[k]+' − '+y+' = '+(da[k]-y)+'. ';x=da[k]}else t=x+' − '+y+' = '+(x-y)+'. ';o.push({h:'Step '+(k+1)+': '+cap(PL[k]),t:t+'Write '+(x-y)+'.'});res=(x-y)+res}return{steps:o,res:+res}}
+function mulS(a,b){const o=[];if(b<10){let c=0,res='';const ds=String(a).split('').reverse().map(Number);ds.forEach((d,k)=>{const p=d*b+c,last=k==ds.length-1;o.push({h:'Step '+(k+1)+': '+cap(PL[k]),t:d+' × '+b+(c?' + '+c+' (carried)':'')+' = '+p+'. Write '+(last?p:p%10)+(!last&&p>9?' and carry '+Math.floor(p/10):'')+'.'});res=(last?p:p%10)+res;c=Math.floor(p/10)});return{steps:o,res:+res}}
+ const ps=[];String(b).split('').reverse().map(Number).forEach((d,k)=>{const p=a*d*10**k;ps.push(p);o.push({h:'Step '+(k+1),t:F(a)+' × '+F(d*10**k)+' = '+F(p)+'.'})});const tot=ps.reduce((x,y)=>x+y);o.push({h:'Step '+(ps.length+1),t:ps.map(F).join(' + ')+' = '+F(tot)+'.'});return{steps:o,res:tot}}
+function divS(a,d){const ds=String(a).split('').map(Number),o=[];let rem=0,q='';ds.forEach((x,i)=>{const cur=rem*10+x,qd=Math.floor(cur/d);rem=cur%d;if(q===''&&qd==0&&i<ds.length-1){o.push({h:'Step '+(o.length+1),t:cur+' is smaller than '+d+', so take one more digit.'});return}o.push({h:'Step '+(o.length+1),t:(i?'Bring down '+x+' to make '+cur+'. ':'')+cur+' ÷ '+d+' = '+qd+' remainder '+rem+'. (Check: '+qd+' × '+d+' = '+qd*d+')'});q+=qd});return{steps:o,res:[+q,rem]}}
+const cache={};
+function build(op,lv,kind,i,sx=''){const used=cache[op+lv]??=new Set(),exact=kind=='mc'||kind=='wp'||kind[0]=='x';let g,sig;
+ for(let t=0;t<80;t++){g=gen(op,lv,rng(op+lv+kind+i+t+sx),i,exact);sig=g.nums.join('_');if(kind[0]=='x'||!used.has(sig))break}
+ used.add(sig);const n=g.nums,[a,b]=n,sym={add:' + ',sub:' − ',mul:' × ',div:' ÷ '}[op],core=n.map(F).join(sym),S_=op=='add'?addS(n):op=='sub'?subS(a,b):op=='mul'?mulS(a,b):divS(a,b);
+ const an=g.ans,at=op=='div'?F(an[0])+(an[1]?' remainder '+an[1]:''):F(an[0]);
+ const verify=op=='add'?(n.length==2?F(an[0])+' − '+F(b)+' = '+F(a):'Add again in reverse order: '+[...n].reverse().map(F).join(' + ')+' = '+F(an[0])):op=='sub'?F(an[0])+' + '+F(b)+' = '+F(a):op=='mul'?F(b)+' × '+F(a)+' = '+F(an[0]):F(an[0])+' × '+b+(an[1]?' + '+an[1]:'')+' = '+F(a);
+ const it={id:op+lv+kind+i+sx,op,lv,nums:n,ans:an,core,q:core+' = ?'+(op=='div'?' (quotient and remainder)':''),steps:S_.steps,res:S_.res,verify,final:core+' = '+at,topic:TOP[op][lv-1],hint:HINT[op]};
+ if(kind=='wp'){const[t,u]=WP[op][i](n);it.text=t;it.unit=u;it.final=core+' = '+at+' '+u}
+ if(kind=='mc'){const r=rng('o'+it.id),c=an[0],cand=[...new Set([c+10,c-10,c+1,c-1,c+100,c-100,c*10,c+2,c-2].filter(x=>x>0&&x!=c))].sort(()=>r()-.5).slice(0,3),o=[c,...cand].sort(()=>r()-.5);it.opts=o;it.ci=o.indexOf(c);it.q='What is '+core+'?'}
+ it.expl=it.final+'. Check: '+verify+'.';return it}
+const memo={};
+function getItems(op,lv){const k=op+lv;if(memo[k])return memo[k];const I={ex:[],pr:[],mcq:[],wp:[]};for(let i=0;i<15;i++)I.ex.push(build(op,lv,'ex',i));for(let i=0;i<15;i++)I.pr.push(build(op,lv,'pr',i));for(let i=0;i<10;i++)I.mcq.push(build(op,lv,'mc',i));for(let i=0;i<5;i++)I.wp.push(build(op,lv,'wp',i));return memo[k]=I}
+function selfCheck(){let n=0,bad=[];for(const o of OPS)for(let l=1;l<=6;l++){const I=getItems(o.k,l),all=[...I.ex,...I.pr,...I.mcq,...I.wp];
+ if(I.ex.length!=15||I.pr.length!=15||I.mcq.length!=10||I.wp.length!=5)bad.push(o.k+l+': wrong counts');
+ if(new Set(all.map(x=>x.nums.join('_'))).size!=all.length)bad.push(o.k+l+': duplicate questions');
+ all.forEach(it=>{n++;const[a,b]=it.nums;let e;if(o.k=='add')e=[it.nums.reduce((x,y)=>x+y)];else if(o.k=='sub'){e=[a-b];if(a<=b)bad.push(it.id+' sub order')}else if(o.k=='mul')e=[a*b];else{if(!b)bad.push(it.id+' zero divisor');e=[Math.floor(a/b),a%b]}
+  if(e.join()!=it.ans.join())bad.push(it.id+': answer');if((o.k=='div'?it.res.join():it.res)!=(o.k=='div'?e.join():e[0]))bad.push(it.id+': steps');
+  if(it.opts&&(new Set(it.opts).size!=4||it.opts.filter(x=>x==e[0]).length!=1||it.opts[it.ci]!=e[0]))bad.push(it.id+': options')})}
+ return{n,bad}}
+/* ---------- state ---------- */
+const KEY='mathAdventureV1';
+const fresh=()=>({nick:'',xp:0,xpg:{},badges:[],prog:{},att:[],mist:[],time:0,mute:false,streak:0,day:null,lv:null});
+let S;try{S=JSON.parse(localStorage.getItem(KEY))||fresh()}catch(e){S=fresh()}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const P=(o,l)=>S.prog[o+l]??={lesson:0,pr:Array(15).fill(0),wp:Array(5).fill(0),best:0,tests:[]};
+const complete=(o,l)=>{const p=P(o,l);return p.lesson&&p.pr.every(x=>x)&&p.best>=70};
+const unlocked=(o,l)=>l==1||complete(o,l-1),done=o=>[1,2,3,4,5,6].filter(l=>complete(o,l)).length;
+const acc=()=>S.att.length?Math.round(100*S.att.filter(a=>a.ok).length/S.att.length):0;
+const BD=[['first','First Step','Answer a question correctly','🌱',()=>S.att.some(a=>a.ok)],['add','Addition Explorer','Complete 3 addition levels','🧭',()=>done('add')>=3],['sub','Subtraction Star','Complete 3 subtraction levels','⭐',()=>done('sub')>=3],['mul','Multiplication Wizard','Complete 3 multiplication levels','🧙',()=>done('mul')>=3],['div','Division Detective','Complete 3 division levels','🕵️',()=>done('div')>=3],['acc','Accuracy Champion','90% correct after 30 answers','🎯',()=>S.att.length>=30&&acc()>=90],['wp','Word Problem Solver','Solve 10 word problems','📖',()=>S.att.filter(a=>a.k=='wp'&&a.ok).length>=10],['perf','Perfect Score','Score 100% on a test','💯',()=>Object.values(S.prog).some(p=>p.best==100)],['mm','Math Master','Complete all 6 levels of one module','👑',()=>OPS.some(o=>done(o.k)==6)],['pro','Pro Challenger','Pass a Pro Math Challenge test','🚀',()=>OPS.some(o=>complete(o.k,6))]];
+function toast(m){const d=document.createElement('div');d.className='toast';d.setAttribute('role','status');d.textContent=m;document.body.append(d);setTimeout(()=>d.remove(),2400)}
+function beep(f){if(S.mute)return;try{const c=beep.c??=new AudioContext(),o=c.createOscillator(),g=c.createGain();o.frequency.value=f;g.gain.value=.08;o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.15)}catch(e){}}
+function confetti(){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;for(let i=0;i<30;i++){const s=document.createElement('span');s.className='conf';s.textContent=pick(['🎉','⭐','🪙','✨']);s.style.left=Math.random()*100+'vw';s.style.animationDelay=Math.random()*.6+'s';document.body.append(s);setTimeout(()=>s.remove(),3000)}}
+function award(id,n){if(S.xpg[id])return;S.xpg[id]=1;S.xp+=n;toast('+'+n+' XP ⭐')}
+function badges(){BD.forEach(b=>{if(!S.badges.includes(b[0])&&b[4]()){S.badges.push(b[0]);toast('Badge unlocked: '+b[1]+' '+b[3]);confetti()}})}
+function checkLevel(o,l){if(complete(o,l)&&!S.xpg[o+l+'L']){award(o+l+'L',50);confetti();toast('Level complete! '+(l<6?'Next level unlocked.':'Module finished!'))}badges();save()}
+function log(op,lv,k,ok){const d=new Date().toDateString();if(S.day!=d){S.streak=S.day==new Date(Date.now()-864e5).toDateString()?S.streak+1:1;S.day=d}S.att.push({op,lv,k,ok,t:Date.now()});if(S.att.length>3000)S.att.shift();beep(ok?660:260)}
+function addMist(it,given){if(S.mist.some(m=>m.id==it.id))return;S.mist.push({id:it.id,op:it.op,lv:it.lv,q:it.text||it.q,given,correct:it.final,topic:it.topic,expl:it.expl,date:new Date().toLocaleDateString(),item:it});if(S.mist.length>200)S.mist.shift()}
+/* ---------- views ---------- */
+let V={s:'home'};
+const app=document.getElementById('app');
+const bar=(p,c)=>`<div class=bar role=progressbar aria-valuenow="${p}" aria-valuemin=0 aria-valuemax=100><i style="width:${p}%;background:${c||'#7c3aed'}"></i></div>`;
+function go(s,o={}){V={s,...o};render();scrollTo(0,0)}
+function render(){const m={home,mod,hub,lesson,q:qscreen,mcq:mcqv,prog:progv,badge:badgev,mist:mistv,set:setv};app.innerHTML=m[V.s]()+`<nav>${[['home','🏠','Home'],['prog','📊','Progress'],['badge','🏅','Badges'],['mist','📝','Mistakes'],['set','⚙️','Settings']].map(x=>`<button onclick="go('${x[0]}')" aria-label="${x[2]}"><span>${x[1]}</span>${x[2]}${x[0]=='mist'&&S.mist.length?' ('+S.mist.length+')':''}</button>`).join('')}</nav>`;const a=app.querySelector('.ans:not(:disabled)');if(a&&V.s=='q')a.focus()}
+const back=(t,f)=>`<button class=s onclick="${f}">← ${t}</button>`;
+function home(){const ok=S.att.filter(a=>a.ok).length,cont=S.lv?`go('hub',{op:'${S.lv.op}',lv:${S.lv.lv}})`:`go('mod',{op:'add'})`;
+ return`<h1>MATH ADVENTURE</h1><p class=sub>Learn Mathematics Through Play!</p>
+<div class="card guide"><span class=mascot aria-hidden=true>🦉</span><b>${S.nick?S.nick+', ':''}${pick(MSG)}</b></div>
+<div class=stats><div class=stat><b>${S.xp}</b>XP</div><div class=stat><b>${Math.floor(S.xp/100)+1}</b>Player level</div><div class=stat><b>${acc()}%</b>Correct</div><div class=stat><b>${S.att.length}</b>Answered</div><div class=stat><b>${S.streak}🔥</b>Day streak</div><div class=stat><b>${S.badges.length}/10</b>Badges</div></div>
+<p><button class=g onclick="${cont}">${S.lv?'Continue Learning':'Start Learning'} ▶</button></p>
+<div class=grid>${OPS.map(o=>{const q=[1,2,3,4,5,6].reduce((s,l)=>s+P(o.k,l).pr.filter(x=>x).length+P(o.k,l).wp.filter(x=>x).length,0);return`<div class=card style="border-top:8px solid ${o.c}"><div style="font-size:2.6rem" aria-hidden=true>${o.i}</div><h2>${o.n}</h2><p>${o.d}</p>${bar(Math.round(done(o.k)/6*100),o.c)}<p>${done(o.k)} of 6 levels · ${q} questions completed</p><button style="background:${o.c}" onclick="go('mod',{op:'${o.k}'})">Start Learning</button></div>`}).join('')}</div>
+<p style="text-align:center;font-size:.9rem">Your progress is saved in this browser on this device. It does not move to other devices automatically.</p>`}
+function mod(){const o=OPS.find(x=>x.k==V.op);return`${back('Home',"go('home')")}<h1 style="color:${o.c}">${o.i} ${o.n}</h1><div class=card><h2>The big idea</h2><p>${IDEA[o.k]}</p></div><h2>Choose a level</h2>${LV.map((n,i)=>{const l=i+1,u=unlocked(o.k,l);return`<div class=card style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap"><div><b>Level ${l}: ${n}</b><br>${TOP[o.k][i]}</div><button ${u?'':'disabled'} onclick="go('hub',{op:'${o.k}',lv:${l}})">${complete(o.k,l)?'✅ Review':u?'▶ Play':'🔒 Locked'}</button></div>`}).join('')}`}
+function hub(){const{op,lv}=V,o=OPS.find(x=>x.k==op),p=P(op,lv),L=!p.lesson;S.lv={op,lv};save();
+ const c=(t,d,b,dis)=>`<div class=card><h2>${t}</h2><p>${d}</p>${b}</div>`;
+ return`${back('Levels',`go('mod',{op:'${op}'})`)}<h1 style="color:${o.c}">Level ${lv}: ${LV[lv-1]}</h1><p class=sub>${o.n} · ${TOP[op][lv-1]}</p>${complete(op,lv)?'<div class=ok>✅ Level complete!</div>':''}
+<div class=grid>${c('1. Learn',`15 worked examples. ${p.lesson?'Done ✅':'Start here!'}`,`<button onclick="go('lesson',{op:'${op}',lv:${lv},i:0})">Open lesson</button>`)}
+${c('2. Practice',`${p.pr.filter(x=>x).length} of 15 done`,`<button ${L?'disabled':''} onclick="startQ('pr')">${L?'🔒 Finish lesson first':'Practise'}</button>`)}
+${c('3. Word problems',`${p.wp.filter(x=>x).length} of 5 done`,`<button ${L?'disabled':''} onclick="startQ('wp')">${L?'🔒 Finish lesson first':'Solve problems'}</button>`)}
+${c('4. Level test',`10 questions. Pass with 70%. Best score: ${p.best}%`,`<button class=o ${L?'disabled':''} onclick="go('mcq',{op:'${op}',lv:${lv},i:0,sel:null,sc:[],fin:0})">${L?'🔒 Finish lesson first':'Take the test'}</button>`)}</div>
+<p>To unlock the next level: finish the lesson, answer all 15 practice questions, and pass the test.</p>`}
+function vert(it){if(it.op=='div')return it.core;const sym={add:'+',sub:'−',mul:'×'}[it.op],ls=it.nums.map(F),r=F(it.res),w=Math.max(r.length,...ls.map(s=>s.length))+2;return ls.map((s,i)=>(i==ls.length-1?sym+' ':'  ')+s.padStart(w-2)).join('\n')+'\n'+'─'.repeat(w)+'\n  '+r.padStart(w-2)}
+const sol=it=>`<div class=sol>${it.op!='div'?`<pre>${vert(it)}</pre>`:''}${it.steps.map(s=>`<p><b>${s.h}</b><br>${s.t}</p>`).join('')}<p class=fin>Final answer: ${it.final}</p><p>✔ Check: ${it.verify}</p></div>`;
+function lesson(){const{op,lv,i}=V,I=getItems(op,lv).ex,it=I[i],last=i==14;
+ return`${back('Level',`go('hub',{op:'${op}',lv:${lv}})`)}<h2>Example ${i+1} of 15</h2>${bar(Math.round((i+1)/15*100))}
+${i==0?`<div class=card><b>The big idea</b><p>${IDEA[op]}</p></div>`:''}
+<div class=card><p><b>Concept:</b> ${it.topic}</p><h2>${it.q}</h2>${sol(it)}
+<p><button class=s ${i?'':'disabled'} onclick="V.i--;render();scrollTo(0,0)">← Previous</button>
+<button onclick="go('q',{mode:'pr',op:'${op}',lv:${lv},i:${i},tries:0,st:P('${op}',${lv}).pr[${i}]||0,msg:'',hint:0})" class=o>Try It Yourself</button>
+${last?`<button class=g onclick="finishLesson()">Finish lesson (+20 XP)</button>`:`<button onclick="V.i++;render();scrollTo(0,0)">Next →</button>`}</p></div>`}
+function finishLesson(){const{op,lv}=V;P(op,lv).lesson=1;award('les'+op+lv,20);checkLevel(op,lv);go('hub',{op,lv})}
+/* practice / word problems / review */
+function startQ(m){const{op,lv}=V,p=P(op,lv),a=p[m],i=Math.max(0,a.findIndex(x=>!x));go('q',{mode:m,op,lv,i,tries:0,st:a[i]||0,msg:'',hint:0})}
+const curItem=()=>V.item||getItems(V.op,V.lv)[V.mode=='pr'?'pr':'wp'][V.i];
+function inputs(it,dis){const d=dis?'disabled':'';return it.op=='div'?`<label>Quotient<input class=ans inputmode=numeric autocomplete=off ${d}></label><label>Remainder<input class=ans inputmode=numeric placeholder=0 autocomplete=off ${d}></label>`:`<label>Your answer<input class=ans inputmode=numeric autocomplete=off ${d}></label>`}
+function qscreen(){const it=curItem(),m=V.mode,list=m=='pr'||m=='wp',n=m=='pr'?15:5,p=list?P(V.op,V.lv):null,arr=list?p[m]:[],dn=arr.filter(x=>x).length,back_=list?`go('hub',{op:'${V.op}',lv:${V.lv}})`:"go('mist')";
+ return`${back(list?'Level':'My Mistakes',back_)}${list?`<h2>${m=='wp'?'Word problem':'Question'} ${V.i+1} of ${n}</h2>${bar(Math.round(dn/n*100))}<p>⭐ ${arr.filter(x=>x==1).length} correct · ${dn} done</p>`:`<h2>${m=='sim'?'Similar question':'Try again'}</h2>`}
+<div class=card><p><b>${it.topic}</b></p><h2>${it.text||it.q}</h2>${inputs(it,V.st)}${V.st?'':'<button onclick="submit()">Submit Answer</button><button class=s onclick="V.hint=1;render()">💡 Hint</button><button class=s onclick="reveal()">Show Steps</button>'}
+${V.hint&&!V.st?`<p class=no>💡 ${it.hint}</p>`:''}${V.msg?`<p class="${V.st==1?'ok':'no'}">${V.msg}</p>`:''}${V.st?sol(it)+(V.st==1?'<p class=ok>Great job! You earned XP for this question (only once).</p>':''):''}
+<p>${list?`<button class=s ${V.i?'':'disabled'} onclick="nav(-1)">← Previous</button>${V.i<n-1?'<button onclick="nav(1)">Next Question →</button>':`<button class=g onclick="finishQ()">Finish</button>`}`:`<button class=s onclick="go('mist')">Back to mistakes</button>`}</p></div>`}
+function nav(d){const p=P(V.op,V.lv);V.i+=d;V.tries=0;V.st=p[V.mode][V.i]||0;V.msg='';V.hint=0;render();scrollTo(0,0)}
+function finishQ(){checkLevel(V.op,V.lv);go('hub',{op:V.op,lv:V.lv})}
+function reveal(){const it=curItem();if(V.st)return;V.st=2;V.msg='Here is how to solve it. Study the steps, then try the next one!';if(V.mode=='pr'||V.mode=='wp'){const a=P(V.op,V.lv)[V.mode];a[V.i]=a[V.i]||2;addMist(it,'(asked for steps)')}save();render()}
+function submit(){const it=curItem();if(V.st)return;const raw=[...document.querySelectorAll('.ans')].map(e=>e.value.replace(/[,\s]/g,''));if(it.op=='div'&&raw[1]==='')raw[1]='0';
+ if(raw.some(x=>!/^\d+$/.test(x))){V.msg='Please type whole numbers only (like 425).';return render()}
+ const v=raw.map(Number),ok=v.every((x,k)=>x==it.ans[k]),m=V.mode,kind=m=='wp'?'wp':'pr';
+ if(m!='sim')log(it.op,it.lv,kind,ok);
+ if(ok){V.st=1;V.msg='Excellent! Your answer is correct!';confetti();if(m=='pr'||m=='wp'){P(V.op,V.lv)[m][V.i]=1;award(it.id,m=='wp'?15:10)}if(m=='rv'){S.mist=S.mist.filter(x=>x.id!=it.id);award('rv'+it.id,0)}}
+ else{V.tries++;if(m!='sim')addMist(it,v.join(' r '));V.msg=V.tries>=3?'Not quite. Let’s look at the steps together.':"Not quite! Let's learn together. Try again.";V.hint=1;if(V.tries>=3){V.st=2;if(m=='pr'||m=='wp'){const a=P(V.op,V.lv)[m];a[V.i]=a[V.i]||2}}}
+ badges();save();render()}
+/* MCQ */
+function mcqv(){const{op,lv,i}=V,I=getItems(op,lv).mcq;
+ if(V.fin){const ok=V.sc.filter(x=>x).length,pct=ok*10,bad=[...new Set(I.filter((_,k)=>!V.sc[k]).map(x=>x.topic))],pass=pct>=70;
+  return`${back('Level',`go('hub',{op:'${op}',lv:${lv}})`)}<div class=card><h1>${pass?'🏆 You passed!':'Keep going! 💪'}</h1><div class=stats><div class=stat><b>${ok}</b>Correct</div><div class=stat><b>${10-ok}</b>Incorrect</div><div class=stat><b>${pct}%</b>Score</div></div>
+<p><b>Topics to revise:</b> ${bad.length?bad.join(', '):'None. Perfect!'}</p><p><b>Next:</b> ${pass?(complete(op,lv)?(lv<6?'Level '+(lv+1)+' is unlocked. Go for it!':'You finished this module!'):'Finish the lesson and all 15 practice questions to unlock the next level.'):'Review the worked examples, then retake the test. Mistakes help us learn.'}</p>
+<button onclick="go('mcq',{op:'${op}',lv:${lv},i:0,sel:null,sc:[],fin:0})">Retake test</button><button class=s onclick="go('lesson',{op:'${op}',lv:${lv},i:0})">Review lesson</button></div>`}
+ const it=I[i],a=V.sel!==null;
+ return`${back('Level',`go('hub',{op:'${op}',lv:${lv}})`)}<h2>Test: question ${i+1} of 10</h2>${bar(i*10)}<p>Score: ${V.sc.filter(x=>x).length}</p><div class=card><h2>${it.q}</h2>${it.opts.map((x,k)=>`<button class="opt ${a?(k==it.ci?'r':k==V.sel?'w':''):''}" ${a?'disabled':''} onclick="pickOpt(${k})">${'ABCD'[k]}. ${F(x)}</button>`).join('')}
+${a?`<p class="${V.sc[i]?'ok':'no'}">${V.sc[i]?'Correct! +10 XP':'Not quite.'} ${it.expl}</p><button onclick="nextMcq()">${i<9?'Next question →':'See results'}</button>`:''}</div>`}
+function pickOpt(k){if(V.sel!==null)return;const it=getItems(V.op,V.lv).mcq[V.i],ok=k==it.ci;V.sel=k;V.sc[V.i]=ok;log(it.op,it.lv,'mc',ok);if(ok)award(it.id,10);else addMist(it,F(it.opts[k]));badges();save();render()}
+function nextMcq(){if(V.i<9){V.i++;V.sel=null;return render()}const pct=V.sc.filter(x=>x).length*10,p=P(V.op,V.lv);p.best=Math.max(p.best,pct);p.tests.push({pct,d:new Date().toLocaleDateString()});if(pct==100)award(V.op+V.lv+'P',30);if(pct>=70)confetti();V.fin=1;checkLevel(V.op,V.lv);render();scrollTo(0,0)}
+/* progress, badges, mistakes, settings */
+function progv(){const ok=S.att.filter(a=>a.ok).length,tests=OPS.flatMap(o=>[1,2,3,4,5,6].flatMap(l=>P(o.k,l).tests.map(t=>({n:o.n.split(' ')[0]+' L'+l,...t})))).slice(-8);
+ let weak=null,wa=101;OPS.forEach(o=>{const a=S.att.filter(x=>x.op==o.k);if(a.length>=5){const c=Math.round(100*a.filter(x=>x.ok).length/a.length);if(c<wa){wa=c;weak=o}}});
+ const rec=S.mist.length?`You have ${S.mist.length} mistakes to review. Open My Mistakes to fix them.`:weak&&wa<85?`Practise ${TIP[weak.k]} before moving to the next level.`:S.att.length?'Great work! Keep going to the next level.':'Start with Addition Adventure. Learn first, then practise!';
+ return`<h1>My Progress</h1><div class="card guide"><span class=mascot>🦉</span><b>${rec}</b></div>
+<div class=stats><div class=stat><b>${S.att.length}</b>Attempted</div><div class=stat><b>${ok}</b>Correct</div><div class=stat><b>${S.att.length-ok}</b>Incorrect</div><div class=stat><b>${acc()}%</b>Accuracy</div><div class=stat><b>${S.xp}</b>XP</div><div class=stat><b>${Math.floor(S.xp/100)+1}</b>Player level</div><div class=stat><b>${OPS.filter(o=>done(o.k)==6).length}/4</b>Modules done</div><div class=stat><b>${OPS.reduce((s,o)=>s+done(o.k),0)}/24</b>Levels done</div><div class=stat><b>${Math.round(S.time/60)}</b>Minutes</div></div>
+${OPS.map(o=>{const a=S.att.filter(x=>x.op==o.k),c=a.filter(x=>x.ok).length,t=a.filter(x=>x.k=='mc'),w=a.filter(x=>x.k=='wp');return`<div class=card><b>${o.i} ${o.n}</b>${bar(a.length?Math.round(100*c/a.length):0,o.c)}<p>${a.length?Math.round(100*c/a.length):0}% correct (${c}/${a.length}) · ${done(o.k)}/6 levels · Test answers: ${t.filter(x=>x.ok).length}/${t.length} · Word problems: ${w.filter(x=>x.ok).length}/${w.length}</p></div>`}).join('')}
+<div class=card><b>Recent test scores</b>${tests.length?tests.map(t=>`<p>${t.n}: ${t.pct}% (${t.d})</p>${bar(t.pct,t.pct>=70?'#15803d':'#c2410c')}`).join(''):'<p>No tests yet. Finish a lesson and take your first test!</p>'}</div>`}
+function badgev(){return`<h1>Badges</h1><p class=sub>${S.badges.length} of 10 earned · ${S.xp} XP</p><div class=grid>${BD.map(b=>`<div class="card badge ${S.badges.includes(b[0])?'on':''}"><span>${b[3]}</span><b>${b[1]}</b><br>${b[2]}</div>`).join('')}</div>`}
+let openM={};
+function mistv(){return`<h1>My Mistakes</h1>${S.mist.length?S.mist.slice().reverse().map(m=>`<div class=card><b>${OPS.find(o=>o.k==m.op).i} ${m.topic}</b> · ${m.date}<h2>${m.q}</h2><p>Your answer: ${m.given} · ${F2(m)}</p><button onclick="retry('${m.id}')">Retry</button><button class=s onclick="openM['${m.id}']=!openM['${m.id}'];render()">View steps</button><button class=s onclick="similar('${m.id}')">Practise similar</button>${openM[m.id]?sol(m.item):''}</div>`).join(''):'<div class=card><h2>No mistakes to fix 🎉</h2><p>When you answer wrongly, the question will wait here so you can try again. Mistakes help us learn.</p></div>'}`}
+const F2=m=>openM[m.id]?'Correct: '+m.correct:'Tap “View steps” to see the answer';
+function retry(id){const m=S.mist.find(x=>x.id==id);go('q',{mode:'rv',op:m.op,lv:m.lv,item:m.item,tries:0,st:0,msg:'',hint:0})}
+function similar(id){const m=S.mist.find(x=>x.id==id),k=m.item.id.includes('wp')?'wp':'xs',i=k=='wp'?+m.item.id.slice(-1):Math.floor(Math.random()*15);const it=build(m.op,m.lv,'x'+k,k=='wp'?i:i,String(Date.now()%1000));go('q',{mode:'sim',op:m.op,lv:m.lv,item:it,tries:0,st:0,msg:'',hint:0})}
+function setv(){return`<h1>Settings</h1><div class=card><label>Nickname (optional)<input value="${S.nick}" maxlength=16 onchange="S.nick=this.value.replace(/[<>&\"]/g,'');save()"></label>
+<p><button class=s onclick="S.mute=!S.mute;save();render()">${S.mute?'🔇 Sound is off':'🔊 Sound is on'}</button></p><p>Please do not type personal details. Your progress is saved only in this browser on this device.</p></div>
+<div class=card><b>Check the questions</b><p>Re-checks all 1,080 questions and answers.</p><button onclick="runCheck()">Run self-check</button><p id=chk></p></div>
+<div class=card><b>Reset</b><p><button class=o onclick="if(confirm('Reset ALL progress? This cannot be undone.')){S=fresh();save();go('home')}">Reset progress</button><button class=o onclick="if(confirm('Clear all local data?')){localStorage.removeItem(KEY);S=fresh();go('home')}">Clear local data</button></p></div>`}
+function runCheck(){const r=selfCheck();document.getElementById('chk').innerHTML=r.bad.length?`<span class=no>${r.bad.length} problems: ${r.bad.slice(0,5).join('; ')}</span>`:`<span class=ok>✅ All ${r.n} items passed (answers, steps, unique options, counts).</span>`}
+document.addEventListener('keydown',e=>{if(e.key=='Enter'&&e.target.classList.contains('ans'))submit()});
+setInterval(()=>{if(!document.hidden){S.time+=10;save()}},10000);
+render();
+</script></body></html>
